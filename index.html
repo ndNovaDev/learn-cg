@@ -9,10 +9,23 @@
         border: 1px solid #000;
       }
     </style>
-    <script src="https://unpkg.com/browse/mathjs@11.11.1/dist/math.min.js"></script>
     <script type="module" src="./index.js"></script>
   </head>
   <body>
-    <canvas width="400" height="400" id="canvas"></canvas>
+    <button id="export">export</button>
+    <canvas width="200" height="200" id="canvas"></canvas>
   </body>
+  <script>
+    const exportBtn = document.getElementById('export');
+    exportBtn.addEventListener('click', () => {
+      const canvas = document.getElementById('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = canvas.toDataURL('image/png');
+      // download
+      const a = document.createElement('a');
+      a.href = img;
+      a.download = 'image.png';
+      a.click();
+    });
+  </script
 </html>
