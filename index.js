@@ -1,5 +1,22 @@
 import { Canvas } from './canvas.js';
 
+const lights = [
+  {
+    type: 'ambient',
+    intensity: 0.2,
+  },
+  {
+    type: 'point',
+    intensity: 0.6,
+    position: [2, 1, 0],
+  },
+  {
+    type: 'directional',
+    intensity: 0.2,
+    direction: [1, 4, 4],
+  },
+];
+
 const spheres = [
   {
     center: [0, -1, 3],
@@ -15,6 +32,11 @@ const spheres = [
     center: [-2, 0, 4],
     radius: 1,
     color: [0, 255, 0],
+  },
+  {
+    center: [0, -5001, 0],
+    radius: 5000,
+    color: [255, 255, 0],
   },
 ];
 const backgroundColor = [255, 255, 255];
@@ -32,25 +54,6 @@ function canvasToViewport(x, y) {
   return [(x * vw) / cw, (y * vh) / ch, d];
 }
 
-/**
- * IntersectRaySphere(O, D, sphere) {
-    r = sphere.radius
-    CO = O - sphere.center
-
-    a = dot(D, D)
-    b = 2*dot(CO, D)
-    c = dot(CO, CO) - r*r
-
-    discriminant = b*b - 4*a*c
-    if discriminant < 0 {
-        return inf, inf
-    }
-
-    t1 = (-b + sqrt(discriminant)) / (2*a)
-    t2 = (-b - sqrt(discriminant)) / (2*a)
-    return t1, t2
-} 
- */
 function intersectRaySphere(O, D, sphere) {
   const r = sphere.radius;
   const CO = [
@@ -73,6 +76,39 @@ function intersectRaySphere(O, D, sphere) {
   return [t1, t2];
 }
 
+function length(v) {
+  return Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+}
+function normalize(v) {
+  const l = length(v);
+  return [v[0] / l, v[1] / l, v[2] / l];
+}
+
+function computeLighting(P, N) {
+  let i = 0;
+  for (const light of lights) {
+    if (light.type === 'ambient') {
+      i += light.intensity;
+    } else {
+      let L;
+      if (light.type === 'point') {
+        L = [
+          light.position[0] - P[0],
+          light.position[1] - P[1],
+          light.position[2] - P[2],
+        ];
+      } else {
+        L = light.direction;
+      }
+      const nDotL = N[0] * L[0] + N[1] * L[1] + N[2] * L[2];
+      if (nDotL > 0) {
+        i += (light.intensity * nDotL) / (length(N) * length(L));
+      }
+    }
+  }
+  return i;
+}
+
 function traceRay(O, D, tMin, tMax) {
   let closestT = Infinity;
   let closestSphere = null;
@@ -90,7 +126,21 @@ function traceRay(O, D, tMin, tMax) {
   if (closestSphere == null) {
     return backgroundColor;
   }
-  return closestSphere.color;
+  /** 焦点 */
+  const P = [
+    O[0] + closestT * D[0],
+    O[1] + closestT * D[1],
+    O[2] + closestT * D[2],
+  ];
+  const N = normalize([
+    P[0] - closestSphere.center[0],
+    P[1] - closestSphere.center[1],
+    P[2] - closestSphere.center[2],
+  ]);
+
+  const light = computeLighting(P, N);
+  const color = closestSphere.color;
+  return [color[0] * light, color[1] * light, color[2] * light];
 }
 
 function go() {
