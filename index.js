@@ -22,21 +22,25 @@ const spheres = [
     center: [0, -1, 3],
     radius: 1,
     color: [255, 0, 0],
+    specular: 500,
   },
   {
     center: [2, 0, 4],
     radius: 1,
     color: [0, 0, 255],
+    specular: 500,
   },
   {
     center: [-2, 0, 4],
     radius: 1,
     color: [0, 255, 0],
+    specular: 10,
   },
   {
     center: [0, -5001, 0],
     radius: 5000,
     color: [255, 255, 0],
+    specular: 1000,
   },
 ];
 const backgroundColor = [255, 255, 255];
@@ -84,7 +88,7 @@ function normalize(v) {
   return [v[0] / l, v[1] / l, v[2] / l];
 }
 
-function computeLighting(P, N) {
+function computeLighting(P, N, V, s) {
   let i = 0;
   for (const light of lights) {
     if (light.type === 'ambient') {
@@ -103,6 +107,20 @@ function computeLighting(P, N) {
       const nDotL = N[0] * L[0] + N[1] * L[1] + N[2] * L[2];
       if (nDotL > 0) {
         i += (light.intensity * nDotL) / (length(N) * length(L));
+      }
+
+      if (s !== -1) {
+        const nDotL = N[0] * L[0] + N[1] * L[1] + N[2] * L[2];
+        const NDotL2 = 2 * nDotL;
+        const R = [
+          NDotL2 * N[0] - L[0],
+          NDotL2 * N[1] - L[1],
+          NDotL2 * N[2] - L[2],
+        ];
+        const rDotV = R[0] * V[0] + R[1] * V[1] + R[2] * V[2];
+        if (rDotV > 0) {
+          i += light.intensity * Math.pow(rDotV / (length(R) * length(V)), s);
+        }
       }
     }
   }
@@ -138,7 +156,12 @@ function traceRay(O, D, tMin, tMax) {
     P[2] - closestSphere.center[2],
   ]);
 
-  const light = computeLighting(P, N);
+  const light = computeLighting(
+    P,
+    N,
+    [D[0] * -1, D[1] * -1, D[2] * -1],
+    closestSphere.specular
+  );
   const color = closestSphere.color;
   return [color[0] * light, color[1] * light, color[2] * light];
 }
