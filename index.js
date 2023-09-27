@@ -95,14 +95,21 @@ function computeLighting(P, N, V, s) {
       i += light.intensity;
     } else {
       let L;
+      let tMax;
       if (light.type === 'point') {
         L = [
           light.position[0] - P[0],
           light.position[1] - P[1],
           light.position[2] - P[2],
         ];
+        tMax = 1;
       } else {
         L = light.direction;
+        tMax = Infinity;
+      }
+      const [shadowSphere] = closestIntersection(P, L, 0.001, tMax);
+      if (shadowSphere) {
+        continue;
       }
       const nDotL = N[0] * L[0] + N[1] * L[1] + N[2] * L[2];
       if (nDotL > 0) {
@@ -127,7 +134,7 @@ function computeLighting(P, N, V, s) {
   return i;
 }
 
-function traceRay(O, D, tMin, tMax) {
+function closestIntersection(O, D, tMin, tMax) {
   let closestT = Infinity;
   let closestSphere = null;
   for (const sphere of spheres) {
@@ -141,6 +148,11 @@ function traceRay(O, D, tMin, tMax) {
       closestSphere = sphere;
     }
   }
+  return [closestSphere, closestT];
+}
+
+function traceRay(O, D, tMin, tMax) {
+  const [closestSphere, closestT] = closestIntersection(O, D, tMin, tMax);
   if (closestSphere == null) {
     return backgroundColor;
   }
