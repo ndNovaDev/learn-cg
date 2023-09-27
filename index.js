@@ -23,27 +23,31 @@ const spheres = [
     radius: 1,
     color: [255, 0, 0],
     specular: 500,
+    reflective: 0.2,
   },
   {
     center: [2, 0, 4],
     radius: 1,
     color: [0, 0, 255],
     specular: 500,
+    reflective: 0.3,
   },
   {
     center: [-2, 0, 4],
     radius: 1,
     color: [0, 255, 0],
     specular: 10,
+    reflective: 0.4,
   },
   {
     center: [0, -5001, 0],
     radius: 5000,
     color: [255, 255, 0],
     specular: 1000,
+    reflective: 0,
   },
 ];
-const backgroundColor = [255, 255, 255];
+const backgroundColor = [0, 0, 0];
 
 const canvasEl = document.getElementById('canvas');
 const cw = canvasEl.width;
@@ -51,6 +55,7 @@ const ch = canvasEl.height;
 const vw = 1;
 const vh = 1;
 const d = 1;
+const recursionDepth = 2;
 
 const canvas = new Canvas(canvasEl);
 
@@ -87,6 +92,11 @@ function normalize(v) {
   const l = length(v);
   return [v[0] / l, v[1] / l, v[2] / l];
 }
+function reflectRay(R, N) {
+  const rDotN = R[0] * N[0] + R[1] * N[1] + R[2] * N[2];
+  const rDotN2 = 2 * rDotN;
+  return [rDotN2 * N[0] - R[0], rDotN2 * N[1] - R[1], rDotN2 * N[2] - R[2]];
+}
 
 function computeLighting(P, N, V, s) {
   let i = 0;
@@ -117,13 +127,7 @@ function computeLighting(P, N, V, s) {
       }
 
       if (s !== -1) {
-        const nDotL = N[0] * L[0] + N[1] * L[1] + N[2] * L[2];
-        const NDotL2 = 2 * nDotL;
-        const R = [
-          NDotL2 * N[0] - L[0],
-          NDotL2 * N[1] - L[1],
-          NDotL2 * N[2] - L[2],
-        ];
+        const R = reflectRay(L, N);
         const rDotV = R[0] * V[0] + R[1] * V[1] + R[2] * V[2];
         if (rDotV > 0) {
           i += light.intensity * Math.pow(rDotV / (length(R) * length(V)), s);
@@ -151,7 +155,7 @@ function closestIntersection(O, D, tMin, tMax) {
   return [closestSphere, closestT];
 }
 
-function traceRay(O, D, tMin, tMax) {
+function traceRay(O, D, tMin, tMax, recursionDepth) {
   const [closestSphere, closestT] = closestIntersection(O, D, tMin, tMax);
   if (closestSphere == null) {
     return backgroundColor;
@@ -175,7 +179,19 @@ function traceRay(O, D, tMin, tMax) {
     closestSphere.specular
   );
   const color = closestSphere.color;
-  return [color[0] * light, color[1] * light, color[2] * light];
+  const localColor = [color[0] * light, color[1] * light, color[2] * light];
+  const r = closestSphere.reflective;
+  if (recursionDepth <= 0 || r <= 0) {
+    return localColor;
+  }
+
+  const R = reflectRay([D[0] * -1, D[1] * -1, D[2] * -1], N);
+  const reflectedColor = traceRay(P, R, 0.001, Infinity, recursionDepth - 1);
+  return [
+    localColor[0] * (1 - r) + reflectedColor[0] * r,
+    localColor[1] * (1 - r) + reflectedColor[1] * r,
+    localColor[2] * (1 - r) + reflectedColor[2] * r,
+  ];
 }
 
 function go() {
@@ -183,7 +199,7 @@ function go() {
   for (let x = -cw / 2; x < cw / 2; x++) {
     for (let y = -ch / 2; y < ch / 2; y++) {
       const D = canvasToViewport(x, y);
-      const color = traceRay(O, D, d, Infinity);
+      const color = traceRay(O, D, d, Infinity, recursionDepth);
       canvas.putPixel(x, y, color);
     }
   }
