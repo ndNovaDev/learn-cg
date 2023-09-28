@@ -20,7 +20,7 @@ export class Canvas {
   putPixel(x, y, color) {
     const ctx = this.canvas.getContext('2d');
     ctx.fillStyle = this.transformColor(color);
-    const { x: tx, y: ty } = this.transformPos(x, y);
+    const { x: tx, y: ty } = this.transformPos(Math.floor(x), Math.floor(y));
     ctx.fillRect(tx, ty, 1, 1);
   }
 }

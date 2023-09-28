@@ -51,35 +51,58 @@ function drawWireFrameTriangle(P0, P1, P2) {
 }
 
 function drawFilledTriangle(oriP0, oriP1, oriP2, color) {
-  const [[x0, y0], [x1, y1], [x2, y2]] = [oriP0, oriP1, oriP2].sort(
+  const [[x0, y0, h0], [x1, y1, h1], [x2, y2, h2]] = [oriP0, oriP1, oriP2].sort(
     (a, b) => a[1] - b[1]
   );
   const x01 = interpolate(y0, x0, y1, x1);
+  const h01 = interpolate(y0, h0, y1, h1);
   const x12 = interpolate(y1, x1, y2, x2);
+  const h12 = interpolate(y1, h1, y2, h2);
   const x02 = interpolate(y0, x0, y2, x2);
+  const h02 = interpolate(y0, h0, y2, h2);
 
   x01.splice(x01.length - 1, 1);
   const x012 = x01.concat(x12);
 
+  h01.splice(h01.length - 1, 1);
+  const h012 = h01.concat(h12);
+
   const m = Math.floor(x012.length / 2);
-  let xLeft, xRight;
+  let xLeft, xRight, hLeft, hRight;
   if (x02[m] < x012[m]) {
     xLeft = x02;
+    hLeft = h02;
     xRight = x012;
+    hRight = h012;
   } else {
     xLeft = x012;
+    hLeft = h012;
     xRight = x02;
+    hRight = h02;
   }
 
   for (let y = y0; y <= y2; y++) {
-    for (let x = xLeft[y - y0]; x <= xRight[y - y0]; x++) {
-      canvas.putPixel(x, y, color);
+    const xL = xLeft[y - y0];
+    const xR = xRight[y - y0];
+    const hSegment = interpolate(xL, hLeft[y - y0], xR, hRight[y - y0]);
+    for (let x = xL; x <= xR; x++) {
+      const shadedColor = [
+        color[0] * hSegment[x - xL],
+        color[1] * hSegment[x - xL],
+        color[2] * hSegment[x - xL],
+      ];
+      canvas.putPixel(x, y, shadedColor);
     }
   }
 }
 
 function go() {
-  drawFilledTriangle([-200, -250], [200, 50], [20, 250], [0, 255, 0]);
+  drawFilledTriangle(
+    [-200, -250, 1],
+    [200, 50, 0.5],
+    [20, 250, 0.1],
+    [0, 255, 0]
+  );
   drawWireFrameTriangle([-200, -250], [200, 50], [20, 250]);
 }
 go();
