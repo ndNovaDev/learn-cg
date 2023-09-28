@@ -1,8 +1,11 @@
 import { Canvas } from './canvas.js';
 
 const canvasEl = document.getElementById('canvas');
-// const cw = canvasEl.width;
-// const ch = canvasEl.height;
+const cw = canvasEl.width;
+const ch = canvasEl.height;
+const vw = 1;
+const vh = 1;
+const d = 1;
 
 const canvas = new Canvas(canvasEl);
 
@@ -96,13 +99,47 @@ function drawFilledTriangle(oriP0, oriP1, oriP2, color) {
   }
 }
 
+function viewportToCanvas(x, y) {
+  return [(x * cw) / vw, (y * ch) / vh];
+}
+
+function projectVertex(v) {
+  return viewportToCanvas((v[0] * d) / v[2], (v[1] * d) / v[2]);
+}
+
+// The four "front" vertices
+const vAf = [-2, -0.5, 5];
+const vBf = [-2, 0.5, 5];
+const vCf = [-1, 0.5, 5];
+const vDf = [-1, -0.5, 5];
+
+// The four "back" vertices
+const vAb = [-2, -0.5, 6];
+const vBb = [-2, 0.5, 6];
+const vCb = [-1, 0.5, 6];
+const vDb = [-1, -0.5, 6];
+
 function go() {
-  drawFilledTriangle(
-    [-200, -250, 1],
-    [200, 50, 0.5],
-    [20, 250, 0.1],
-    [0, 255, 0]
-  );
-  drawWireFrameTriangle([-200, -250], [200, 50], [20, 250]);
+  // drawFilledTriangle(
+  //   [-200, -250, 1],
+  //   [200, 50, 0.5],
+  //   [20, 250, 0.1],
+  //   [0, 255, 0]
+  // );
+  // drawWireFrameTriangle([-200, -250], [200, 50], [20, 250]);
+  drawLine(projectVertex(vAf), projectVertex(vBf), [0, 0, 255]);
+  drawLine(projectVertex(vBf), projectVertex(vCf), [0, 0, 255]);
+  drawLine(projectVertex(vCf), projectVertex(vDf), [0, 0, 255]);
+  drawLine(projectVertex(vDf), projectVertex(vAf), [0, 0, 255]);
+
+  drawLine(projectVertex(vAb), projectVertex(vBb), [255, 0, 0]);
+  drawLine(projectVertex(vBb), projectVertex(vCb), [255, 0, 0]);
+  drawLine(projectVertex(vCb), projectVertex(vDb), [255, 0, 0]);
+  drawLine(projectVertex(vDb), projectVertex(vAb), [255, 0, 0]);
+
+  drawLine(projectVertex(vAf), projectVertex(vAb), [0, 255, 0]);
+  drawLine(projectVertex(vBf), projectVertex(vBb), [0, 255, 0]);
+  drawLine(projectVertex(vCf), projectVertex(vCb), [0, 255, 0]);
+  drawLine(projectVertex(vDf), projectVertex(vDb), [0, 255, 0]);
 }
 go();
